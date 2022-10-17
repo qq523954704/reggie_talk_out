@@ -3,6 +3,20 @@ server:
 spring:
   application:
     name: reggie_take_out
+  ##redis 配置
+  redis:
+    host: 175.178.98.83
+    port: 6379
+    #password: 123456
+    database: 1
+    jedis:
+      #redis连接池
+      pool:
+        max-active: 8 #最大连接数
+        max-wait: 1ms #连接池最大等待时间
+        max-idle: 4 #连接池最大空闲连接
+        min-idle: 0 #连接池最小空闲连接
+
   datasource:
     druid:
       driver-class-name: com.mysql.cj.jdbc.Driver
@@ -20,3 +34,5 @@ mybatis-plus:
 
 reggie:
   path: D:\code\image\
+
+
