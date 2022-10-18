@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
@@ -35,6 +37,9 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     /**
      * 发送手机短信
@@ -57,7 +62,11 @@ public class UserController {
             log.info("code={}", code);
 
             //验证码保存到Session
-            request.getSession().setAttribute("code", code);
+            //request.getSession().setAttribute("code", code);
+
+            //生成验证码存如reids，有效期为5min
+            redisTemplate.opsForValue().set("code",code,5,TimeUnit.MINUTES);
+
             return R.success("短信成功");
 
         }
@@ -82,7 +91,9 @@ public class UserController {
         String code = (String) map.get("code");
 
         //对比验证码
-        String ssionCode = (String) request.getSession().getAttribute("code");
+        //String ssionCode = (String) request.getSession().getAttribute("code");
+
+        String ssionCode = (String) redisTemplate.opsForValue().get("code");
         log.info(ssionCode);
 
         //对比验证码
@@ -100,6 +111,9 @@ public class UserController {
             }
             //比对正确登入成功
             request.getSession().setAttribute("user", user.getId());
+
+            //登入成功删除redis数据
+            redisTemplate.delete("code");
             return R.success(user);
         }
 

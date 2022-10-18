@@ -14,9 +14,11 @@ import com.itheima.reggie.service.DishService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 
@@ -40,6 +42,9 @@ public class DishController {
 
     @Autowired
     private CategoryService categoryService;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     @PostMapping
     public R<String> save(@RequestBody DishDto dishDto){
@@ -148,6 +153,21 @@ public class DishController {
     @GetMapping("/list")
     public R<List<DishDto>> list(Dish dish){
 
+        List<DishDto> dishDtoList=null;
+
+        //构造key
+        String key = "dish"+ dish.getCategoryId()+"_"+dish.getStatus();
+
+        //1.从redis获取数据
+        dishDtoList = (List<DishDto>) redisTemplate.opsForValue().get(key);
+
+        if (dishDtoList!=null){
+            //redis存在数据返回
+            return R.success(dishDtoList);
+
+            //不存在进行数据库查询
+        }
+
         //构造查询条件
         LambdaQueryWrapper<Dish> queryWrapper = new LambdaQueryWrapper<>();
         //查询条件
@@ -161,7 +181,7 @@ public class DishController {
         List<Dish> dishList= dishService.list(queryWrapper);
 
 
-        List<DishDto> dishDtoList = dishList.stream().map(dish1 -> {
+            dishDtoList = dishList.stream().map(dish1 -> {
 
             DishDto dishDto = new DishDto();
             BeanUtils.copyProperties(dish1, dishDto);//复制属性
@@ -182,6 +202,9 @@ public class DishController {
             return dishDto;
 
         }).collect(Collectors.toList());
+
+            //储存数据到redis
+        redisTemplate.opsForValue().set(key,dishDtoList,60, TimeUnit.MINUTES);
 
         return R.success(dishDtoList);
 
