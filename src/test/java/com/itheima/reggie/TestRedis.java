@@ -16,7 +16,7 @@ public class TestRedis {
     @Test
     public void redisTest(){
 
-        redisTemplate.opsForValue().set("name","张三",10l, TimeUnit.SECONDS);//设置string类型,存10s
+        redisTemplate.opsForValue().set("name", "张三", 10l, TimeUnit.SECONDS);//设置string类型,存10s
         String name = (String) redisTemplate.opsForValue().get("name");
         System.out.println(name);
     }
