@@ -2,6 +2,8 @@ package com.itheima.reggie.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableLogic;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -57,5 +59,7 @@ public class SetmealDish implements Serializable {
 
 
     //是否删除
+    @ApiModelProperty(value = "是否删除")
+    @TableField("is_deleted")
     private Integer isDeleted;
 }

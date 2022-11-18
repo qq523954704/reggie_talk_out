@@ -80,7 +80,6 @@ public class Dish implements Serializable {
 
     @ApiModelProperty(value = "是否删除")
     @TableField("is_deleted")
-    @TableLogic
     private Integer isDeleted;
 
 

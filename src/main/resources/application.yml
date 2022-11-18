@@ -20,6 +20,7 @@ spring:
     redis:
       time-to-live: 9000000 #设置缓存时间
 
+
   datasource:
     druid:
       driver-class-name: com.mysql.cj.jdbc.Driver
@@ -38,5 +39,4 @@ mybatis-plus:
 reggie:
 #  path: /usr/local/img/
   path: D:\code\image\
-
 

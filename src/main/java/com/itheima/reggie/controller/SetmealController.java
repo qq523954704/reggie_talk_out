@@ -2,20 +2,26 @@ package com.itheima.reggie.controller;
 
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.itheima.reggie.common.CustomException;
 import com.itheima.reggie.common.R;
 import com.itheima.reggie.dto.SetmealDto;
 import com.itheima.reggie.entity.Category;
+import com.itheima.reggie.entity.Dish;
+import com.itheima.reggie.entity.DishFlavor;
 import com.itheima.reggie.entity.Setmeal;
 import com.itheima.reggie.service.CategoryService;
 import com.itheima.reggie.service.SetmealDishService;
 import com.itheima.reggie.service.SetmealService;
+import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -133,6 +139,53 @@ public class SetmealController {
         return R.success(list);
 
 
+    }
+
+
+    /**
+     * 根据Id查询套餐信息
+     */
+
+    @GetMapping("/{id}")
+    public R<SetmealDto> get(@PathVariable Long id){
+
+        SetmealDto setmealDto = setmealService.getDto(id);
+        return R.success(setmealDto);
+    }
+
+    /**
+     * 修改套餐
+     */
+    @ApiOperation("修改套餐")
+    @PutMapping
+    public R<String> update(@RequestBody SetmealDto setmealDto){
+
+        if (setmealDto == null) return R.error("错误");
+        if (setmealDto.getSetmealDishes() == null) return R.error("无菜品数据");
+
+        setmealService.removeWithDish(List.of(setmealDto.getId()));
+        setmealService.saveWithDish(setmealDto);
+
+
+        return R.success("修改成功");
+    }
+
+
+    //停售停售套餐
+    @ApiOperation("停售套餐")
+    @PostMapping("/status/{status}")
+    @Transactional
+    public R<String> status(@PathVariable("status") Integer status, @RequestParam List<Long> ids) {
+
+        log.info("status{}",status);
+        log.info("ids{}",ids);
+
+        LambdaUpdateWrapper<Setmeal> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.in(Setmeal::getId,ids).set(Setmeal::getStatus, status);
+
+        setmealService.update(updateWrapper);
+
+        return status ==0?R.success("已停售"):R.success("已起售");
     }
 
 }

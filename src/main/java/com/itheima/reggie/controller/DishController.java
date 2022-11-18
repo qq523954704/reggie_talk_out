@@ -13,10 +13,12 @@ import com.itheima.reggie.entity.DishFlavor;
 import com.itheima.reggie.service.CategoryService;
 import com.itheima.reggie.service.DishFlavorService;
 import com.itheima.reggie.service.DishService;
+import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -214,12 +216,12 @@ public class DishController {
     }
 
     //停售菜品
-
+    @ApiOperation("停售菜品")
     @PostMapping("/status/{status}")
     public R<String> status(@PathVariable("status") Integer status, Long[] ids) {
 
-        log.info(status.toString());
-        log.info(ids.toString());
+        log.info("status{}",status);
+        log.info("ids{}",ids);
 
 //
 //            LambdaQueryWrapper<Dish> queryWrapper =new LambdaQueryWrapper<>();
@@ -234,13 +236,16 @@ public class DishController {
 //
 
         LambdaUpdateWrapper<Dish> updateWrapper = new LambdaUpdateWrapper<>();
-        updateWrapper.in(ids != null, Dish::getId, ids).set(Dish::getStatus, status);
+        updateWrapper.in(Dish::getId,ids).set(Dish::getStatus, status);
 
         dishService.update(updateWrapper);
 
         return R.success("修改成功");
     }
 
+    //删除菜品
+    @Transactional
+    @ApiOperation("删除菜品")
     @DeleteMapping
     public R<String> status(@RequestParam("ids") List<Long> ids) {
 
@@ -254,6 +259,10 @@ public class DishController {
 
         dishService.removeByIds(ids);
 
+        //删除对应口味
+        LambdaQueryWrapper<DishFlavor> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.in(ids != null,DishFlavor::getDishId,ids);
+        dishFlavorService.remove(queryWrapper);
         return R.success("删除成功");
     }
 
