@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -220,23 +221,25 @@ public class DishController {
     @PostMapping("/status/{status}")
     public R<String> status(@PathVariable("status") Integer status, Long[] ids) {
 
-        log.info("status{}",status);
-        log.info("ids{}",ids);
+        log.info("status{}", status);
+        log.info("ids{}", ids);
 
-//
-//            LambdaQueryWrapper<Dish> queryWrapper =new LambdaQueryWrapper<>();
-//            queryWrapper.in(ids !=null,Dish::getId,ids);
-//            List<Dish> list = dishService.list(queryWrapper);
-//            for (Dish dish : list) {
-//                dish.setStatus(status);
-//            }
-//            dishService.updateBatchById(list);
-//            return R.success("修改成功");
-//
-//
+/*
+        LambdaQueryWrapper<Dish> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.in(ids != null, Dish::getId, ids);
+        List<Dish> dishList = dishService.list(queryWrapper);
+
+        List<Dish> doDishList = dishList.stream().map(dish -> {
+            dish.setStatus(status);
+            return dish;
+        }).collect(Collectors.toList());
+        dishService.updateBatchById(doDishList);
+
+        return R.success("修改成功");
+*/
 
         LambdaUpdateWrapper<Dish> updateWrapper = new LambdaUpdateWrapper<>();
-        updateWrapper.in(Dish::getId,ids).set(Dish::getStatus, status);
+        updateWrapper.in(Dish::getId, ids).set(Dish::getStatus, status);
 
         dishService.update(updateWrapper);
 
@@ -254,14 +257,14 @@ public class DishController {
 
         List<Dish> dishList = dishService.listByIds(ids);
         for (Dish dish : dishList) {
-            if (dish.getStatus()==1) throw new CustomException("在售中不可删除");
+            if (dish.getStatus() == 1) throw new CustomException("在售中不可删除");
         }
 
         dishService.removeByIds(ids);
 
         //删除对应口味
         LambdaQueryWrapper<DishFlavor> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.in(ids != null,DishFlavor::getDishId,ids);
+        queryWrapper.in(ids != null, DishFlavor::getDishId, ids);
         dishFlavorService.remove(queryWrapper);
         return R.success("删除成功");
     }
