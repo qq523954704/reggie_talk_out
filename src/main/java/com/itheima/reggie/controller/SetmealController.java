@@ -6,12 +6,11 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.itheima.reggie.common.CustomException;
 import com.itheima.reggie.common.R;
+import com.itheima.reggie.dto.DishDto;
 import com.itheima.reggie.dto.SetmealDto;
-import com.itheima.reggie.entity.Category;
-import com.itheima.reggie.entity.Dish;
-import com.itheima.reggie.entity.DishFlavor;
-import com.itheima.reggie.entity.Setmeal;
+import com.itheima.reggie.entity.*;
 import com.itheima.reggie.service.CategoryService;
+import com.itheima.reggie.service.DishService;
 import com.itheima.reggie.service.SetmealDishService;
 import com.itheima.reggie.service.SetmealService;
 import io.swagger.annotations.ApiOperation;
@@ -56,7 +55,7 @@ public class SetmealController {
      * @return
      */
     @PostMapping
-    @CacheEvict(value = "setmealCache",allEntries = true) //清理setmealCache分类下的所有数据
+    @CacheEvict(value = "setmealCache", allEntries = true) //清理setmealCache分类下的所有数据
     public R<String> save(@RequestBody SetmealDto setmealDto) {
         log.info("新增套餐:{}", setmealDto);
 
@@ -64,7 +63,6 @@ public class SetmealController {
         return R.success("新增成功");
 
     }
-
 
 
     /**
@@ -114,7 +112,7 @@ public class SetmealController {
     }
 
     @DeleteMapping
-    @CacheEvict(value = "setmealCache",allEntries = true) //清理setmealCache分类下的所有数据
+    @CacheEvict(value = "setmealCache", allEntries = true) //清理setmealCache分类下的所有数据
     public R<String> delete(@RequestParam List<Long> ids) {
 
         setmealService.removeWithDish(ids);
@@ -123,16 +121,17 @@ public class SetmealController {
 
     /**
      * 根据条件查询套餐数据
+     *
      * @param setmeal
      * @return
      */
     @GetMapping("/list")
-    @Cacheable(value = "setmealCache",key = "#setmeal.id+'_'+#setmeal.status")//在分类setmealCache下存数据
-    public R<List<Setmeal>> list(Setmeal setmeal){
+    @Cacheable(value = "setmealCache", key = "#setmeal.id+'_'+#setmeal.status")//在分类setmealCache下存数据
+    public R<List<Setmeal>> list(Setmeal setmeal) {
 
         LambdaQueryWrapper<Setmeal> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(setmeal.getCategoryId()!=null,Setmeal::getCategoryId,setmeal.getCategoryId());
-        queryWrapper.eq(setmeal.getStatus()!=null,Setmeal::getStatus,setmeal.getStatus());
+        queryWrapper.eq(setmeal.getCategoryId() != null, Setmeal::getCategoryId, setmeal.getCategoryId());
+        queryWrapper.eq(setmeal.getStatus() != null, Setmeal::getStatus, setmeal.getStatus());
         queryWrapper.orderByDesc(Setmeal::getUpdateTime);
 
         List<Setmeal> list = setmealService.list(queryWrapper);
@@ -147,7 +146,7 @@ public class SetmealController {
      */
 
     @GetMapping("/{id}")
-    public R<SetmealDto> get(@PathVariable Long id){
+    public R<SetmealDto> get(@PathVariable Long id) {
 
         SetmealDto setmealDto = setmealService.getDto(id);
         return R.success(setmealDto);
@@ -158,7 +157,7 @@ public class SetmealController {
      */
     @ApiOperation("修改套餐")
     @PutMapping
-    public R<String> update(@RequestBody SetmealDto setmealDto){
+    public R<String> update(@RequestBody SetmealDto setmealDto) {
 
         if (setmealDto == null) return R.error("错误");
         if (setmealDto.getSetmealDishes() == null) return R.error("无菜品数据");
@@ -177,15 +176,44 @@ public class SetmealController {
     @Transactional
     public R<String> status(@PathVariable("status") Integer status, @RequestParam List<Long> ids) {
 
-        log.info("status{}",status);
-        log.info("ids{}",ids);
+        log.info("status{}", status);
+        log.info("ids{}", ids);
 
         LambdaUpdateWrapper<Setmeal> updateWrapper = new LambdaUpdateWrapper<>();
-        updateWrapper.in(Setmeal::getId,ids).set(Setmeal::getStatus, status);
+        updateWrapper.in(Setmeal::getId, ids).set(Setmeal::getStatus, status);
 
         setmealService.update(updateWrapper);
 
-        return status ==0?R.success("已停售"):R.success("已起售");
+        return status == 0 ? R.success("已停售") : R.success("已起售");
+    }
+
+    /**
+     * 套餐相关菜品查询查询
+     */
+
+    @Autowired
+    private DishService dishService;
+
+    @ApiOperation("套餐相关菜品查询查询")
+    @GetMapping("/dish/{id}")
+    public R<List<DishDto>> dish(@PathVariable String id) { //数据库SetmealId是varchar,用Long会查询出所有
+
+        log.info("setmealId:{}",id);
+        LambdaQueryWrapper<SetmealDish> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(SetmealDish::getSetmealId, id);
+        List<SetmealDish> setmealDishList = setmealDishService.list(queryWrapper);
+
+        List<DishDto> dishDtoList = setmealDishList.stream().map(setmealDish -> {
+
+            DishDto dishDto = new DishDto();
+            Dish dish = dishService.getById(setmealDish.getDishId());
+            BeanUtils.copyProperties(dish, dishDto);
+            dishDto.setCopies(setmealDish.getCopies());
+            return dishDto;
+
+        }).collect(Collectors.toList());
+
+        return R.success(dishDtoList);
     }
 
 }

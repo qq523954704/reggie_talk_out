@@ -65,7 +65,7 @@ public class UserController {
             //request.getSession().setAttribute("code", code);
 
             //生成验证码存如reids，有效期为5min
-            redisTemplate.opsForValue().set("code",code,5,TimeUnit.MINUTES);
+            redisTemplate.opsForValue().set("code", code, 5, TimeUnit.MINUTES);
 
             return R.success("短信成功");
 
@@ -120,6 +120,15 @@ public class UserController {
 
         //验证码不一致登入失败
         return R.error("登入失败");
+    }
+
+    @PostMapping("loginout")
+    public R<String> loginOut(HttpSession session) {
+
+        Object user = session.getAttribute("user");
+        session.removeAttribute("user");
+
+        return R.success("已退出"+user);
     }
 
 }

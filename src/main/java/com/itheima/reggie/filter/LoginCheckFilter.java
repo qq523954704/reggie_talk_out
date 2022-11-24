@@ -30,7 +30,7 @@ public class LoginCheckFilter implements Filter {
         //1.获得本次请求的URL
         String requestURI = request.getRequestURI();
 
-        log.info("拦截请求: {}",requestURI);
+        //log.info("拦截请求: {}",requestURI);
 
         //2.检查本次请求路径是否需要处理
           //2.1 不用处理的URL
@@ -64,7 +64,7 @@ public class LoginCheckFilter implements Filter {
         if (employee!=null){
             BaseContext.setCurrentId((Long) employee);//当前登入用户的线程存入Id到ThreadLocal的副本中
             filterChain.doFilter(request,response);
-            log.info("Id:{}已登入",employee);
+            log.info("employee:{}已登入",employee);
 
             return;
         }
@@ -74,7 +74,7 @@ public class LoginCheckFilter implements Filter {
         if (user!=null){
             BaseContext.setCurrentId((Long) user);//当前登入用户的线程存入Id到ThreadLocal的副本中
             filterChain.doFilter(request,response);
-            log.info("Id:{}已登入",user);
+            log.info("user:{}已登入",user);
 
             return;
         }
@@ -82,7 +82,7 @@ public class LoginCheckFilter implements Filter {
 
         //5.未登入，向客户端响应数据
         response.getWriter().write(JSON.toJSONString(R.error("NOTLOGIN")));
-        log.info("未登入拦截");
+        log.info("NOTLOGIN");
 
     }
 
